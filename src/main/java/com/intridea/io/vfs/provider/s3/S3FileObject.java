@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.vfs2.FileName;
@@ -118,30 +119,31 @@ public class S3FileObject extends AbstractFileObject {
     @Override
     protected void doAttach() {
         if (!attached) {
-            try {
-                // Do we have file with name?
-                object = service.getObject(bucket.getName(), getS3Key());
+            if (StringUtils.isNotEmpty(getS3Key())) {
+                try {
+                    // Do we have file with name?
+                    object = service.getObject(bucket.getName(), getS3Key());
 
-                logger.info("Attach file to S3 Object: " + object);
+                    logger.info("Attach file to S3 Object: " + object);
 
-                attached = true;
-                return;
-            } catch (AmazonServiceException e) {
-                // No, we don't
+                    attached = true;
+                    return;
+                } catch (AmazonServiceException e) {
+                    // No, we don't
+                }
+
+                try {
+                    // Do we have folder with that name?
+                    object = service.getObject(bucket.getName(), getS3Key() + FileName.SEPARATOR);
+
+                    logger.info("Attach folder to S3 Object: " + object);
+
+                    attached = true;
+                    return;
+                } catch (AmazonServiceException e) {
+                    // No, we don't
+                }
             }
-
-            try {
-                // Do we have folder with that name?
-                object = service.getObject(bucket.getName(), getS3Key() + FileName.SEPARATOR);
-
-                logger.info("Attach folder to S3 Object: " + object);
-
-                attached = true;
-                return;
-            } catch (AmazonServiceException e) {
-                // No, we don't
-            }
-
             // Create a new
             if (object == null) {
                 object = new S3Object();
